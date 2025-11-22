@@ -29,10 +29,19 @@ def employee_dashboard(request):
 def delivery_details_view(request, order_id):
     order = get_object_or_404(Order, id=order_id, assigned_to=request.user)
     if request.method == 'POST':
-        form = DeliveryDetailsForm(request.POST)
+        form = DeliveryDetailsForm(request.POST, order=order)
         if form.is_valid():
             distance = form.cleaned_data['distance']
             vehicle = form.cleaned_data['vehicle']
+            # Handle vehicle reassignment
+            if order.assigned_vehicle and order.assigned_vehicle != vehicle:
+                # Release the previously assigned vehicle
+                order.assigned_vehicle.in_use = False
+                order.assigned_vehicle.save()
+            # Assign new vehicle and mark as in use
+            if vehicle:
+                vehicle.in_use = True
+                vehicle.save()
             # Save distance and assign vehicle to order
             order.distance_away = distance
             order.assigned_vehicle = vehicle
@@ -40,7 +49,7 @@ def delivery_details_view(request, order_id):
             messages.success(request, 'Delivery details updated successfully.')
             return redirect('employee:dashboard')
     else:
-        form = DeliveryDetailsForm(initial={'order_id': order.id})
+        form = DeliveryDetailsForm(initial={'order_id': order.id}, order=order)
     return render(request, 'employee/delivery_details.html', {'form': form, 'order': order})
 
 @login_required

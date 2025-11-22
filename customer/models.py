@@ -48,7 +48,12 @@ class Order(models.Model):
         # Placeholder for ETA calculation or field
         return getattr(self, '_eta', '-')
 
+    _distance_away = models.FloatField(null=True, blank=True)
+
     @property
     def distance_away(self):
-        # Placeholder for distance calculation or field
-        return getattr(self, '_distance_away', '-')
+        return self._distance_away or '-'
+
+    @distance_away.setter
+    def distance_away(self, value):
+        self._distance_away = value
